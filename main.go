@@ -61,14 +61,8 @@ func sendRedis(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
-	if keys == "" {
-		if err := client.Set("keys", keys + "key" + string(increment) ); err != nil {
-			panic(err)
-		}
-	} else {
-		if err := client.Set("keys", keys +  "," + "key" + string(increment) ); err != nil {
-			panic(err)
-		}
+	if err := client.Set("keys", keys +  "," + "key" + string(increment) ); err != nil {
+		panic(err)
 	}
 
 	increment++
@@ -104,6 +98,33 @@ func getRedis(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if _, err := w.Write([]byte(finalString)); err != nil {
+		panic(err)
+	}
+}
+
+func delRedis(w http.ResponseWriter, r *http.Request) {
+	client := RedisClient()
+
+	keys, err := client.Get("keys")
+	if err != nil {
+		panic(err)
+	}
+
+	arr :=  strings.Split(keys, ",")
+
+	for _, element := range arr {
+		_, err := client.Del(element)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	_, err = client.Del("keys")
+	if err != nil {
+		panic(err)
+	}
+
+	if _, err := w.Write([]byte("Done")); err != nil {
 		panic(err)
 	}
 }
@@ -201,6 +222,7 @@ func main() {
 
 	http.Handle("/outshine/client/send", limit(http.HandlerFunc(sendRedis)))
 	http.Handle("/outshine/client/get", http.HandlerFunc(getRedis))
+	http.Handle("/outshine/client/delete", http.HandlerFunc(delRedis))
 	http.Handle("/outshine/client/cached", cacheClient.Middleware(http.HandlerFunc(getRedis)))
 
 	if err := http.ListenAndServe(":" + PORT, nil); err != nil {
