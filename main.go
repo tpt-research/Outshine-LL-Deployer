@@ -20,6 +20,8 @@ var PORT = os.Getenv("PORT")
 var REDIS_IP = os.Getenv("REDIS_IP")
 var REDIS_PORT = os.Getenv("REDIS_PORT")
 
+var APIKEY = os.Getenv("APIKEY")
+
 var increment = 1;
 
 func initRedis() {
@@ -40,6 +42,10 @@ func checkEnv() {
 	if REDIS_IP == "" {
 		REDIS_IP = "localhost"
 	}
+
+	if APIKEY == "" {
+		APIKEY = "admin:nimda"
+	}
 }
 
 func RedisClient() *redis.Client {
@@ -49,6 +55,11 @@ func RedisClient() *redis.Client {
 func sendRedis(w http.ResponseWriter, r *http.Request) {
 	lat := r.Header.Get("lat")
 	lon := r.Header.Get("lon")
+	apikey := r.Header.Get("apikey")
+
+	if apikey != APIKEY {
+		return
+	}
 
 	client := RedisClient()
 
@@ -103,6 +114,12 @@ func getRedis(w http.ResponseWriter, r *http.Request) {
 }
 
 func delRedis(w http.ResponseWriter, r *http.Request) {
+	apikey := r.Header.Get("apikey")
+
+	if apikey != APIKEY {
+		return
+	}
+
 	client := RedisClient()
 
 	keys, err := client.Get("keys")
